@@ -1,10 +1,11 @@
-const express = require('express')
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
+const db = require('../db/index');
 
 router.get('/', (req, res, next) => {
-  // TODO: Реализовать, подстановку в поля ввода формы 'Счетчики'
-  // актуальных значений из сохраненых (по желанию)
-  res.render('pages/admin', { title: 'Admin page' })
+  const skills =  db.get('skills').value();
+  
+  res.render('pages/admin', { title: 'Admin page', skills });
 })
 
 router.post('/skills', (req, res, next) => {

@@ -13,18 +13,10 @@ block content
             .form-title Счетчики
             if (msgskill)
               .status= msgskill
-            label.form-skill__input-line 
-              span.form-skill__input-title Возраст
-              input(name="age" type="number").form-skill__input
-            label.form-skill__input-line 
-              span.form-skill__input-title Концертов
-              input(name="concerts" type="number").form-skill__input
-            label.form-skill__input-line 
-              span.form-skill__input-title Число городов
-              input(name="cities" type="number").form-skill__input
-            label.form-skill__input-line 
-              span.form-skill__input-title Лет на сцене
-              input(name="years" type="number").form-skill__input
+            each item in skills
+              label.form-skill__input-line 
+                span.form-skill__input-title=item.text
+                input(name=`${item.id}` type="number" value=`${item.number}`).form-skill__input
             .form__btns.form-skill__input-line
               button(type="submit").button Сохранить
           form.form-upload(action='/admin/upload' method="POST" enctype="multipart/form-data")
