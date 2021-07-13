@@ -6,8 +6,14 @@ router.get('/', (req, res, next) => {
 })
 
 router.post('/', (req, res, next) => {
-  // TODO: Реализовать функцию входа в админ панель по email и паролю
-  res.send('Реализовать функцию входа по email и паролю')
+  const {email, password} = req.body;
+  
+  if (!email || !password) {
+    res.render('pages/login', {title: 'SigIn page', msglogin: 'Incorrect email or password'})
+    return;
+  }
+
+  res.redirect('/admin');
 })
 
-module.exports = router
+module.exports = router;
