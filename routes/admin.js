@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/index');
 
+const skillsFields = ['age', 'concerts', 'cities', 'years'];
+
+const isValid = (value => {
+  if ((value === '') || (isNaN(value))) {
+    return false;
+  }
+
+  return true;
+});
+
 router.get('/', (req, res, next) => {
   const skills =  db.get('skills').value();
   
@@ -9,16 +19,18 @@ router.get('/', (req, res, next) => {
 })
 
 router.post('/skills', (req, res, next) => {
-  /*
-  TODO: Реализовать сохранение нового объекта со значениями блока скиллов
+  const skills = req.body;
 
-    в переменной age - Возраст начала занятий на скрипке
-    в переменной concerts - Концертов отыграл
-    в переменной cities - Максимальное число городов в туре
-    в переменной years - Лет на сцене в качестве скрипача
-  */
-  res.send('Реализовать сохранение нового объекта со значениями блока скиллов')
-})
+  for (const skill in skills) {
+    const value = skills[skill];
+
+    if (skillsFields.includes(skill) && isValid(value)) {
+      db.get('skills').find({id: skill}).assign({number: value}).write();
+    }
+  };
+
+  return res.redirect('/admin');
+});
 
 router.post('/upload', (req, res, next) => {
   /* TODO:
