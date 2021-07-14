@@ -52,8 +52,8 @@ router.post('/skills', (req, res, next) => {
 })
 
 router.post('/upload', (req, res, next) => {
-  let form = new formidable.IncomingForm()
-  let upload = path.normalize(path.join('./public', 'upload'))
+  const form = new formidable.IncomingForm()
+  const upload = path.normalize(path.join('./public', 'upload'))
 
   if (!fs.existsSync(upload)) {
     fs.mkdirSync(upload)
