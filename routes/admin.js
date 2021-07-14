@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/index');
+const formidable = require('formidable');
+const fs = require('fs');
+const path = require('path');
 
 const skillsFields = ['age', 'concerts', 'cities', 'years'];
 
@@ -11,6 +14,22 @@ const isValid = (value => {
 
   return true;
 });
+
+const validation = (fields, files) => {
+  if (files.photo.name === '' || files.photo.size === 0) {
+    return { status: 'Picture not loaded', err: true };
+  }
+
+  if (!fields.name) {
+    return { status: 'No picture description', err: true };
+  }
+
+  if (!fields.price) {
+    return { status: 'No price', err: true };
+  }
+
+  return { status: 'Ok', err: false };
+};
 
 router.get('/', (req, res, next) => {
   const skills =  db.get('skills').value();
@@ -32,15 +51,46 @@ router.post('/skills', (req, res, next) => {
   return res.redirect('/admin');
 });
 
-router.post('/upload', (req, res, next) => {
-  /* TODO:
-   Реализовать сохранения объекта товара на стороне сервера с картинкой товара и описанием
-    в переменной photo - Картинка товара
-    в переменной name - Название товара
-    в переменной price - Цена товара
-    На текущий момент эта информация хранится в файле data.json  в массиве products
-  */
-  res.send('Реализовать сохранения объекта товара на стороне сервера')
-})
+router.post('/upload', (req, res, next) => {  
+  let form = new formidable.IncomingForm();
+  let upload = path.normalize(path.join('./public', 'upload'));
 
-module.exports = router
+  if (!fs.existsSync(upload)) {
+    fs.mkdirSync(upload);
+  }
+
+  form.uploadDir = path.normalize(path.join(process.cwd(), upload));
+
+  form.parse(req, function (err, fields, files) {
+    if (err) {
+      return next(err);
+    }
+
+    const valid = validation(fields, files);
+
+    const { path: photoPath, name: photoName } = files.photo;
+    const { price, name } = fields;
+
+    if (valid.err) {
+      fs.unlinkSync(photoPath);
+
+      return res.redirect(`/?msg=${valid.status}`);
+    }
+
+    const fileName = path.normalize(path.join(upload, photoName));
+
+    fs.rename(photoPath, fileName, function (err) {
+      if (err) {
+        console.error(err.message);
+
+        return;
+      }
+
+      db.get('products').push({src: path.normalize(path.join('/upload', photoName)), name: name, price: Number(price)}).write();
+
+      res.redirect('/');
+    });
+  });
+});
+
+module.exports = router;
