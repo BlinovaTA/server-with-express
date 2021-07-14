@@ -2,7 +2,8 @@ const express = require('express')
 const router = express.Router()
 const db = require('../db/index')
 const formidable = require('formidable')
-const fs = require('fs')
+const fs = require('fs/promises')
+const { constants } = require('fs')
 const path = require('path')
 
 const skillsFields = ['age', 'concerts', 'cities', 'years']
@@ -51,40 +52,35 @@ router.post('/skills', (req, res, next) => {
   return res.redirect('/admin')
 })
 
-router.post('/upload', (req, res, next) => {
-  const form = new formidable.IncomingForm()
-  const upload = path.normalize(path.join('./public', 'upload'))
+router.post('/upload', async (req, res, next) => {
+  try {
+    const form = new formidable.IncomingForm()
+    const upload = path.normalize(path.join('./public', 'upload'))
 
-  if (!fs.existsSync(upload)) {
-    fs.mkdirSync(upload)
-  }
+    await fs.access('./public', constants.R_OK | constants.W_OK)
+    await fs.mkdir(upload, { recursive: true })
 
-  form.uploadDir = path.normalize(path.join(process.cwd(), upload))
+    form.uploadDir = path.normalize(path.join(process.cwd(), upload))
 
-  form.parse(req, function (err, fields, files) {
-    if (err) {
-      return next(err)
-    }
-
-    const valid = validation(fields, files)
-
-    const { path: photoPath, name: photoName } = files.photo
-    const { price, name } = fields
-
-    if (valid.err) {
-      fs.unlinkSync(photoPath)
-
-      return res.redirect(`/?msg=${valid.status}`)
-    }
-
-    const fileName = path.normalize(path.join(upload, photoName))
-
-    fs.rename(photoPath, fileName, function (err) {
+    form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.error(err.message)
-
-        return
+        return next(err)
       }
+
+      const valid = validation(fields, files)
+
+      const { path: photoPath, name: photoName } = files.photo
+      const { price, name } = fields
+
+      if (valid.err) {
+        await fs.unlink(photoPath)
+
+        return next({ message: valid.status })
+      }
+
+      const fileName = path.normalize(path.join(upload, photoName))
+
+      await fs.rename(photoPath, fileName)
 
       db.get('products')
         .push({
@@ -96,7 +92,9 @@ router.post('/upload', (req, res, next) => {
 
       res.redirect('/')
     })
-  })
+  } catch (error) {
+    next(error)
+  }
 })
 
 module.exports = router
